@@ -1,6 +1,7 @@
 REBAR ?= $(shell which rebar 2>/dev/null || which ./rebar)
 REBAR_FLAGS ?=
 
+travis: test
 all: compile
 
 compile:
