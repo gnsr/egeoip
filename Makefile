@@ -28,3 +28,6 @@ build-plt:
 dialyzer:
 	$(REBAR) dialyze $(REBAR_FLAGS)
 
+update_db:
+	wget -N https://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz -O ./priv/GeoIP.dat.gz
+	wget -N https://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz -O ./priv/GeoLiteCity.dat.gz
