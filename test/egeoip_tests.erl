@@ -8,6 +8,7 @@ address_fast_test_() ->
      ?_assertEqual(3573612662, egeoip:address_fast("213.1.0.118", 0 , 24))].
 
 run_test_() ->
+    application:ensure_all_started(egeoip),
     {inorder,
      {foreach,
       fun egeoip:start/0,
@@ -23,6 +24,7 @@ run_test_() ->
        {"non_parallel", fun non_parallel/0}]}}.
 
 run_countrydb_test_() ->
+    application:ensure_all_started(egeoip),
   {inorder,
      {foreach,
       fun() -> egeoip:start(country) end,
