@@ -21,7 +21,10 @@ init([]) ->
 		   city
 	   end,
     Processes = worker(tuple_to_list(worker_names()), File),
-    {ok, {{one_for_one, 5, 300}, Processes}}.
+    DbToUpdate = application:get_env(egeoip, dbpath, undefined),
+    Updater = [{egeoip_db_updater, {egeoip_db_updater, start_link, [DbToUpdate]},
+                permanent, 5000, worker, [egeoip_db_updater]}],
+    {ok, {{one_for_one, 5, 300}, Processes ++ Updater}}.
 
 worker_names() ->
     {egeoip_0,
