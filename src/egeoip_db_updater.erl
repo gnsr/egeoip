@@ -96,5 +96,5 @@ handle_info(reload_db, #state{ dbpath = DbPath, db = Db } = State) ->
           end,
     erlang:send_after(?REFRESH_INTERVAL_MS, self(), reload_db),
     {noreply, NewState};
-handle_info(Info, State) ->
+handle_info(_Info, State) ->
     {noreply, State}.
