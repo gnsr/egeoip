@@ -59,17 +59,27 @@ egeoip() ->
     {ok, IpAddressLong} = egeoip:ip2long("207.145.216.106"),
     {ok, IpAddressLong} = egeoip:ip2long(<<207,145,216,106>>),
     {ok, R} = egeoip:lookup(IpAddressLong),
+    Region
+        = case application:get_env(egeoip, dbfile) of
+              {ok, city} -> <<"CA">>;
+              _ -> <<>>
+          end,
     #geoip{country_code = "US",
            country_code3 = "USA",
            country_name = "United States",
-           region = <<"CA">>,
+           region = Region,
            _ = _} = R,
     %% This is the test IP that MaxMind uses
     {ok, R1} = egeoip:lookup("24.24.24.24"),
+    Region1
+        = case application:get_env(egeoip, dbfile) of
+              {ok, city} -> <<"NY">>;
+              _ -> <<>>
+          end,
     #geoip{country_code = "US",
            country_code3 = "USA",
            country_name = "United States",
-           region = <<"NY">>,
+           region = Region1,
            _ = _} = R1.
 
 
