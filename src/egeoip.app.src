@@ -4,11 +4,12 @@
   {modules,[]},
   {registered, []},
   {env, [
-      {dbfile, city}%,
+      {dbfile, city}%, | country
       % dbpath may be left undefined, so as to not run the self-updater
       %   but if defined, it must be a dat.gz file
-      %{dbpath, "https://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"}
-      % or e.g. "https://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz"
+      %{dbpath, {remote, "https://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"}}
+      % or
+      %{dbpath, {local, "./priv/GeoIP.dat.gz"}}
   ]},
   {mod, {egeoip_app, []}},
   {applications,[kernel,stdlib,crypto,asn1,public_key,ssl,inets]}]}.
