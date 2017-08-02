@@ -35,7 +35,7 @@ update_db:
 console:
 	erl -pa ebin/ \
 	    -eval "code:load_file(egeoip), \
-	           [application:ensure_all_started(App) \
+	           [application:start(App) \
 	            || App <- [crypto,asn1,public_key,ssl,inets,egeoip]], \
 	           [code:ensure_loaded(list_to_atom(filename:rootname(filename:basename(F)))) \
 	            || P <- code:get_path(), F <- filelib:wildcard(P ++ \"/*.beam\")]."
