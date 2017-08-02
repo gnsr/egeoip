@@ -79,11 +79,11 @@ get(R, List) when is_list(List) ->
 reload() ->
     reload(filename()).
 
-%% @spec reload(Path) -> ok
+%% @spec reload(Path | {compressed_data, CompressedData}) -> ok
 %% @doc Load the database at Path in this process and then change the
 %%      state of the running server with the new database.
-reload(FileName) ->
-    case new(FileName) of
+reload(FileNameOrCompressedData) ->
+    case new(FileNameOrCompressedData) of
         {ok, NewState} ->
             Workers = egeoip_sup:worker_names(),
             [gen_server:call(W, {reload, NewState})  || W <- tuple_to_list(Workers)];
@@ -242,14 +242,14 @@ new(country) ->
     new(default_db(["GeoIP.dat", "GeoIPCity.dat", "GeoLiteCity.dat"]));
 new(city) ->
     new(default_db(["GeoIPCity.dat", "GeoLiteCity.dat"]));
+new({compressed_data, CompressedData}) ->
+    Data = zlib:gunzip(CompressedData),
+    load_data(from_memory, Data);
 new(Path) ->
     case filelib:is_file(Path) of
         true ->
             Data = load_file(Path),
-            Max = ?STRUCTURE_INFO_MAX_SIZE,
-            State = read_structures(Path, Data, size(Data) - 3, Max),
-            ok = check_state(State),
-            {ok, State};
+            load_data(Path, Data);
         false ->
             {error, {geoip_db_not_found,Path}}
     end.
@@ -499,6 +499,12 @@ priv_path(Components) ->
                  F -> filename:dirname(filename:dirname(F))
              end,
     filename:join([AppDir, "priv" | Components]).
+
+load_data(Path, Data) ->
+    Max = ?STRUCTURE_INFO_MAX_SIZE,
+    State = read_structures(Path, Data, size(Data) - 3, Max),
+    ok = check_state(State),
+    {ok, State}.
 
 load_file(Path) ->
     case file:read_file(Path) of

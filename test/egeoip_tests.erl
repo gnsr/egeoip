@@ -2,12 +2,15 @@
 -include_lib("eunit/include/eunit.hrl").
 -include("egeoip.hrl").
 
+-type restart_type() :: temporary.
+
 address_fast_test_() ->
     [?_assertEqual(invalid_fast_address, egeoip:address_fast("1", 0, 24)),
      ?_assertEqual(16909060, egeoip:address_fast("1.2.3.4", 0, 24)),
      ?_assertEqual(3573612662, egeoip:address_fast("213.1.0.118", 0 , 24))].
 
 run_test_() ->
+    ensure_all_started(egeoip),
     {inorder,
      {foreach,
       fun egeoip:start/0,
@@ -23,6 +26,7 @@ run_test_() ->
        {"non_parallel", fun non_parallel/0}]}}.
 
 run_countrydb_test_() ->
+    ensure_all_started(egeoip),
   {inorder,
      {foreach,
       fun() -> egeoip:start(country) end,
@@ -59,17 +63,27 @@ egeoip() ->
     {ok, IpAddressLong} = egeoip:ip2long("207.145.216.106"),
     {ok, IpAddressLong} = egeoip:ip2long(<<207,145,216,106>>),
     {ok, R} = egeoip:lookup(IpAddressLong),
+    Region
+        = case application:get_env(egeoip, dbfile) of
+              {ok, city} -> <<"CA">>;
+              _ -> <<>>
+          end,
     #geoip{country_code = "US",
            country_code3 = "USA",
            country_name = "United States",
-           region = <<"CA">>,
+           region = Region,
            _ = _} = R,
     %% This is the test IP that MaxMind uses
     {ok, R1} = egeoip:lookup("24.24.24.24"),
+    Region1
+        = case application:get_env(egeoip, dbfile) of
+              {ok, city} -> <<"NY">>;
+              _ -> <<>>
+          end,
     #geoip{country_code = "US",
            country_code3 = "USA",
            country_name = "United States",
-           region = <<"NY">>,
+           region = Region1,
            _ = _} = R1.
 
 
@@ -247,3 +261,41 @@ country_test_data() ->
      {"12.12.197.23", "US", "USA"},
      {"12.12.199.3", "US", "USA"},
      {"12.12.200.79", "US", "USA"}].
+
+-spec ensure_all_started(Application) -> {'ok', Started} | {'error', Reason} when
+      Application :: atom(),
+      Started :: [atom()],
+      Reason :: term().
+ensure_all_started(Application) ->
+    ensure_all_started(Application, temporary).
+
+-spec ensure_all_started(Application, Type) -> {'ok', Started} | {'error', Reason} when
+      Application :: atom(),
+      Type :: restart_type(),
+      Started :: [atom()],
+      Reason :: term().
+ensure_all_started(Application, Type) ->
+    case ensure_all_started(Application, Type, []) of
+    {ok, Started} ->
+        {ok, lists:reverse(Started)};
+    {error, Reason, Started} ->
+        _ = [application:stop(App) || App <- Started],
+        {error, Reason}
+    end.
+
+ensure_all_started(Application, Type, Started) ->
+    case application:start(Application, Type) of
+    ok ->
+        {ok, [Application | Started]};
+    {error, {already_started, Application}} ->
+        {ok, Started};
+    {error, {not_started, Dependency}} ->
+        case ensure_all_started(Dependency, Type, Started) of
+        {ok, NewStarted} ->
+            ensure_all_started(Application, Type, NewStarted);
+        Error ->
+            Error
+        end;
+    {error, Reason} ->
+        {error, {Application, Reason}, Started}
+    end.
